@@ -117,6 +117,26 @@ function mostrarAviso(mensagem) {
 }
 
 /* ---------------------------------------------------------
+   2B. TEMA CLARO / ESCURO
+   O tema fica no atributo data-tema do <html> e é lembrado no navegador.
+   O visual de cada tema está no final do style.css.
+   --------------------------------------------------------- */
+const CHAVE_TEMA = "avela_tema"; // guarda "escuro" ou "claro"
+
+function aplicarTema(tema) {
+  document.documentElement.dataset.tema = tema;
+}
+
+function alternarTema() {
+  const novo = document.documentElement.dataset.tema === "claro" ? "escuro" : "claro";
+  aplicarTema(novo);
+  salvarArmazenado(CHAVE_TEMA, novo);
+}
+
+// Aplica o tema salvo assim que o script carrega (padrão: escuro, como a marca)
+aplicarTema(lerArmazenado(CHAVE_TEMA, "escuro"));
+
+/* ---------------------------------------------------------
    3. CATÁLOGO: leitura da planilha do Google Sheets
    --------------------------------------------------------- */
 
@@ -259,6 +279,9 @@ function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
 const ICONE_CORACAO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.7 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.2 4.2 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>';
 const ICONE_SACOLA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
 
+const ICONE_SOL = '<svg class="icone-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>';
+const ICONE_LUA = '<svg class="icone-lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+
 function montarCabecalho() {
   const el = document.getElementById("cabecalho");
   if (!el) return;
@@ -270,6 +293,9 @@ function montarCabecalho() {
           <span class="logo__sub">SEMIJOIAS</span>
         </a>
         <nav class="acoes" aria-label="Atalhos">
+          <button class="icone-btn" id="btn-tema" type="button" aria-label="Alternar entre tema claro e escuro">
+            ${ICONE_SOL}${ICONE_LUA}
+          </button>
           <a class="icone-btn" href="index.html?filtro=favoritos#vitrine" aria-label="Favoritos">
             ${ICONE_CORACAO}<span class="badge" id="badge-fav" hidden>0</span>
           </a>
@@ -279,6 +305,8 @@ function montarCabecalho() {
         </nav>
       </div>
     </header>`;
+
+  document.getElementById("btn-tema").addEventListener("click", alternarTema);
 }
 
 function montarRodape() {
