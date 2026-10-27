@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carrinho | AVELA Semijoias</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body data-pagina="carrinho">
+
+  <div id="cabecalho"></div>
+
+  <main class="container carrinho">
+    <h1 class="secao__titulo">Seu carrinho</h1>
+
+    <div class="carrinho__layout">
+      <!-- Lista de itens (preenchida pelo script.js) -->
+      <div id="itens" class="itens"></div>
+
+      <!-- Resumo do pedido -->
+      <aside class="resumo" id="resumo" hidden>
+        <h2>Resumo do pedido</h2>
+        <div class="resumo__linha">
+          <span>Total</span>
+          <strong id="total">R$ 0,00</strong>
+        </div>
+
+        <label for="cliente-nome">Seu nome</label>
+        <input type="text" id="cliente-nome" placeholder="Como podemos te chamar?" autocomplete="name">
+
+        <label for="cliente-obs">Observações</label>
+        <textarea id="cliente-obs" rows="3" placeholder="Ex.: nome para gravação, tamanho do anel, cor do fio"></textarea>
+
+        <a class="btn btn--bordo btn--grande btn--cheio" id="btn-whatsapp" href="#" target="_blank" rel="noopener">
+          Finalizar pelo WhatsApp
+        </a>
+        <p class="resumo__nota">Você será levada ao WhatsApp da loja com o pedido pronto. Pagamento e entrega são combinados lá.</p>
+        <button class="link-discreto" id="btn-limpar">Esvaziar carrinho</button>
+      </aside>
+    </div>
+  </main>
+
+  <div id="rodape"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
