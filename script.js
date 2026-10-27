@@ -15,7 +15,7 @@ const CONFIG = {
 
   // Link CSV da planilha publicada (veja o README, passo a passo).
   // Deixe vazio ("") para usar os produtos de exemplo abaixo.
-  PLANILHA_CSV_URL: "",
+  PLANILHA_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTwdStz24CSa24b4LzwfQuXSUj58_HivRAXlYp_fpjhLN3ZLJZ-axs8bKSXPC1XoJ9f7LfZ_H-n6OLX/pub?gid=0&single=true&output=csv",
 };
 
 /* Produtos de exemplo: usados quando PLANILHA_CSV_URL está vazio
