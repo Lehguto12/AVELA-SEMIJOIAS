@@ -44,11 +44,22 @@ const IMAGEM_PADRAO =
     '<path d="M130 166h140M180 130l-12 36 32 60M220 130l12 36-32 60"/></g></svg>'
   );
 
-/* Troca imagens quebradas pela imagem padrão (evento "error" não borbulha,
-   por isso usamos a fase de captura: o "true" no final) */
+/* Imagens quebradas: o evento "error" não borbulha, por isso usamos a fase
+   de captura (o "true" no final). */
 document.addEventListener("error", (e) => {
   const img = e.target;
-  if (img.tagName === "IMG" && !img.dataset.fallback) {
+  if (img.tagName !== "IMG") return;
+
+  // 1ª falha: tenta o outro formato de link do Drive
+  const m = img.src.match(/googleusercontent\.com\/d\/([\w-]+)=w800/);
+  if (m && !img.dataset.tentouAlt) {
+    img.dataset.tentouAlt = "1";
+    img.src = `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+    return;
+  }
+
+  // 2ª falha: mostra a imagem padrão
+  if (!img.dataset.fallback) {
     img.dataset.fallback = "1";
     img.src = IMAGEM_PADRAO;
   }
@@ -135,6 +146,12 @@ function lerCSV(texto) {
   return linhas;
 }
 
+/* Aceita qualquer link do Drive (compartilhar, thumbnail ou open) e devolve um link de imagem */
+function ajustarLinkImagem(url) {
+  const m = String(url).match(/drive\.google\.com\/(?:file\/d\/|thumbnail\?id=|open\?id=|uc\?[^ ]*?id=)([\w-]+)/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w800` : url;
+}
+
 /* Converte as linhas do CSV em objetos de produto, usando o cabeçalho da planilha */
 function csvParaProdutos(texto) {
   const [cabecalho, ...linhas] = lerCSV(texto);
@@ -147,7 +164,7 @@ function csvParaProdutos(texto) {
       nome: (l[pos("nome")] || "").trim(),
       categoria: (l[pos("categoria")] || "").trim(),
       preco: converterPreco(l[pos("preco")]),
-      imagem: (l[pos("imagem_url")] || "").trim(),
+      imagem: ajustarLinkImagem((l[pos("imagem_url")] || "").trim()),
       descricao: (l[pos("descricao")] || "").trim(),
       destaque: ["sim", "s", "true", "1", "x"].includes(normalizar(l[pos("destaque")])),
     }))
