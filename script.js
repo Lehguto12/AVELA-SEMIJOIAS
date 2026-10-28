@@ -292,7 +292,7 @@ function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
   const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
 
   const linhas = [
-    "Olá! Gostaria de fazer um pedido na *AVELA Semijoias*:",
+    "Olá! Gostaria de fazer um pedido na *AVELA Semi Joias*:",
     "",
     // Cada produto vai com o link da página dele, para o vendedor ver a peça exata
     ...itens.flatMap((i) => [
