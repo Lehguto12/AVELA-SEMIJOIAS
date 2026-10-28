@@ -15,7 +15,14 @@ const CONFIG = {
 
   // Link CSV da planilha publicada (veja o README, passo a passo).
   // Deixe vazio ("") para usar os produtos de exemplo abaixo.
-  PLANILHA_CSV_URL: "",
+  PLANILHA_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTwdStz24CSa24b4LzwfQuXSUj58_HivRAXlYp_fpjhLN3ZLJZ-axs8bKSXPC1XoJ9f7LfZ_H-n6OLX/pub?gid=0&single=true&output=csv",
+
+  // Endereço público do site, usado nos links de produto enviados no WhatsApp.
+  // Exemplo: "https://seuusuario.github.io/avela_semijoias"  (sem barra no final)
+  // Deixe vazio ("") para usar o endereço de onde o site está aberto no momento.
+  // Dica: enquanto você testa no computador (localhost), preencha com o endereço
+  // real do site para o vendedor conseguir abrir o link.
+  SITE_URL: "",
 };
 
 /* Produtos de exemplo: usados quando PLANILHA_CSV_URL está vazio
@@ -44,11 +51,22 @@ const IMAGEM_PADRAO =
     '<path d="M130 166h140M180 130l-12 36 32 60M220 130l12 36-32 60"/></g></svg>'
   );
 
-/* Troca imagens quebradas pela imagem padrão (evento "error" não borbulha,
-   por isso usamos a fase de captura: o "true" no final) */
+/* Imagens quebradas: o evento "error" não borbulha, por isso usamos a fase
+   de captura (o "true" no final). */
 document.addEventListener("error", (e) => {
   const img = e.target;
-  if (img.tagName === "IMG" && !img.dataset.fallback) {
+  if (img.tagName !== "IMG") return;
+
+  // 1ª falha: tenta o outro formato de link do Drive
+  const m = img.src.match(/googleusercontent\.com\/d\/([\w-]+)=w800/);
+  if (m && !img.dataset.tentouAlt) {
+    img.dataset.tentouAlt = "1";
+    img.src = `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+    return;
+  }
+
+  // 2ª falha: mostra a imagem padrão
+  if (!img.dataset.fallback) {
     img.dataset.fallback = "1";
     img.src = IMAGEM_PADRAO;
   }
@@ -106,6 +124,26 @@ function mostrarAviso(mensagem) {
 }
 
 /* ---------------------------------------------------------
+   2B. TEMA CLARO / ESCURO
+   O tema fica no atributo data-tema do <html> e é lembrado no navegador.
+   O visual de cada tema está no final do style.css.
+   --------------------------------------------------------- */
+const CHAVE_TEMA = "avela_tema"; // guarda "escuro" ou "claro"
+
+function aplicarTema(tema) {
+  document.documentElement.dataset.tema = tema;
+}
+
+function alternarTema() {
+  const novo = document.documentElement.dataset.tema === "claro" ? "escuro" : "claro";
+  aplicarTema(novo);
+  salvarArmazenado(CHAVE_TEMA, novo);
+}
+
+// Aplica o tema salvo assim que o script carrega (padrão: escuro, como a marca)
+aplicarTema(lerArmazenado(CHAVE_TEMA, "escuro"));
+
+/* ---------------------------------------------------------
    3. CATÁLOGO: leitura da planilha do Google Sheets
    --------------------------------------------------------- */
 
@@ -135,23 +173,46 @@ function lerCSV(texto) {
   return linhas;
 }
 
-/* Converte as linhas do CSV em objetos de produto, usando o cabeçalho da planilha */
+/* Aceita qualquer link do Drive (compartilhar, thumbnail ou open) e devolve um link de imagem */
+function ajustarLinkImagem(url) {
+  const m = String(url).match(/drive\.google\.com\/(?:file\/d\/|thumbnail\?id=|open\?id=|uc\?[^ ]*?id=)([\w-]+)/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w800` : url;
+}
+
+/* Converte as linhas do CSV em objetos de produto, usando o cabeçalho da planilha.
+   A coluna Imagem_URL aceita UMA ou VÁRIAS fotos separadas por "|" (ou uma por linha
+   dentro da célula). Exemplo:  link1 | link2 | link3 */
 function csvParaProdutos(texto) {
   const [cabecalho, ...linhas] = lerCSV(texto);
   const colunas = cabecalho.map(normalizar); // id, nome, categoria, preco, imagem_url, descricao, destaque
   const pos = (nome) => colunas.indexOf(nome);
 
   return linhas
-    .map((l) => ({
-      id: (l[pos("id")] || "").trim(),
-      nome: (l[pos("nome")] || "").trim(),
-      categoria: (l[pos("categoria")] || "").trim(),
-      preco: converterPreco(l[pos("preco")]),
-      imagem: (l[pos("imagem_url")] || "").trim(),
-      descricao: (l[pos("descricao")] || "").trim(),
-      destaque: ["sim", "s", "true", "1", "x"].includes(normalizar(l[pos("destaque")])),
-    }))
+    .map((l) => {
+      const imagens = (l[pos("imagem_url")] || "")
+        .split(/[|\n]/)
+        .map((url) => ajustarLinkImagem(url.trim()))
+        .filter(Boolean);
+
+      return {
+        id: (l[pos("id")] || "").trim(),
+        nome: (l[pos("nome")] || "").trim(),
+        categoria: (l[pos("categoria")] || "").trim(),
+        preco: converterPreco(l[pos("preco")]),
+        imagem: imagens[0] || "", // foto principal (usada nos cards e no carrinho)
+        imagens,                  // todas as fotos (usadas na página do produto)
+        descricao: (l[pos("descricao")] || "").trim(),
+        destaque: ["sim", "s", "true", "1", "x"].includes(normalizar(l[pos("destaque")])),
+      };
+    })
     .filter((p) => p.id && p.nome);
+}
+
+/* Devolve sempre uma lista de fotos do produto (nunca vazia) */
+function listaImagens(p) {
+  const lista = Array.isArray(p.imagens) ? p.imagens.filter(Boolean) : [];
+  if (!lista.length && p.imagem) lista.push(p.imagem);
+  return lista.length ? lista : [IMAGEM_PADRAO];
 }
 
 /* Busca os produtos (uma vez só por página) */
@@ -219,15 +280,26 @@ function removerDoCarrinho(id) {
    5. WHATSAPP: monta a mensagem do pedido
    --------------------------------------------------------- */
 
+/* Endereço completo da página de um produto, ex.: https://site.com/produto.html?id=3 */
+function linkDoProduto(id) {
+  const caminho = `produto.html?id=${encodeURIComponent(id)}`;
+  if (CONFIG.SITE_URL) return `${CONFIG.SITE_URL.replace(/\/+$/, "")}/${caminho}`;
+  return new URL(caminho, location.href).href;
+}
+
 /* itens: lista de { produto, qtd } */
 function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
   const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
 
   const linhas = [
-    "Olá! Gostaria de fazer um pedido na *AVELA Semi Joias*:",
+    "Olá! Gostaria de fazer um pedido na *AVELA Semijoias*:",
     "",
-    ...itens.map((i) => `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(i.produto.preco * i.qtd)}`),
-    "",
+    // Cada produto vai com o link da página dele, para o vendedor ver a peça exata
+    ...itens.flatMap((i) => [
+      `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(i.produto.preco * i.qtd)}`,
+      `Ver peça: ${linkDoProduto(i.produto.id)}`,
+      "",
+    ]),
     `*Total: ${formatarPreco(total)}*`,
   ];
   if (nomeCliente) linhas.push("", `Nome: ${nomeCliente}`);
@@ -242,6 +314,9 @@ function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
 const ICONE_CORACAO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.7 3.8 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.2 0 5.3 3.2 4.2 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>';
 const ICONE_SACOLA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
 
+const ICONE_SOL = '<svg class="icone-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>';
+const ICONE_LUA = '<svg class="icone-lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+
 function montarCabecalho() {
   const el = document.getElementById("cabecalho");
   if (!el) return;
@@ -253,6 +328,9 @@ function montarCabecalho() {
           <span class="logo__sub">SEMIJOIAS</span>
         </a>
         <nav class="acoes" aria-label="Atalhos">
+          <button class="icone-btn" id="btn-tema" type="button" aria-label="Alternar entre tema claro e escuro">
+            ${ICONE_SOL}${ICONE_LUA}
+          </button>
           <a class="icone-btn" href="index.html?filtro=favoritos#vitrine" aria-label="Favoritos">
             ${ICONE_CORACAO}<span class="badge" id="badge-fav" hidden>0</span>
           </a>
@@ -262,6 +340,8 @@ function montarCabecalho() {
         </nav>
       </div>
     </header>`;
+
+  document.getElementById("btn-tema").addEventListener("click", alternarTema);
 }
 
 function montarRodape() {
@@ -384,6 +464,8 @@ async function iniciarHome() {
 
 /* ---------------------------------------------------------
    8. PÁGINA DO PRODUTO (produto.html?id=...)
+   Galeria com várias fotos: miniaturas, setas, arrastar no celular
+   e ampliação em tela cheia (lightbox) ao clicar na foto.
    --------------------------------------------------------- */
 async function iniciarProduto() {
   const produtos = await carregarProdutos();
@@ -399,12 +481,131 @@ async function iniciarProduto() {
   document.title = `${p.nome} | AVELA Semijoias`;
   let qtd = 1;
 
+  const fotos = listaImagens(p);
+  const temVarias = fotos.length > 1;
+  let fotoAtual = 0;
+
+  // Elementos do lightbox (ficam no produto.html, fora da área do produto)
+  const lightbox = document.getElementById("lightbox");
+  const lightboxImg = document.getElementById("lightbox-img");
+
+  /* Troca o src de uma <img> zerando as marcas do tratamento de erro,
+     para que a nova foto também possa tentar o link alternativo do Drive */
+  function definirImagem(img, url) {
+    delete img.dataset.tentouAlt;
+    delete img.dataset.fallback;
+    img.src = url;
+  }
+
+  function mostrarFoto(indice) {
+    fotoAtual = (indice + fotos.length) % fotos.length; // volta ao início/fim da lista
+
+    const principal = document.getElementById("foto-principal");
+    if (principal) definirImagem(principal, fotos[fotoAtual]);
+
+    document.querySelectorAll(".miniatura").forEach((m, i) => {
+      m.classList.toggle("ativa", i === fotoAtual);
+      m.setAttribute("aria-current", i === fotoAtual ? "true" : "false");
+    });
+
+    const contador = document.getElementById("foto-contador");
+    if (contador) contador.textContent = `${fotoAtual + 1} / ${fotos.length}`;
+
+    if (lightbox && !lightbox.hidden) definirImagem(lightboxImg, fotos[fotoAtual]);
+  }
+
+  function abrirLightbox() {
+    if (!lightbox) return;
+    definirImagem(lightboxImg, fotos[fotoAtual]);
+    lightboxImg.alt = p.nome;
+    lightbox.querySelectorAll(".lightbox__seta").forEach((s) => (s.hidden = !temVarias));
+    lightbox.hidden = false;
+    document.body.classList.add("sem-rolagem");
+    document.getElementById("lightbox-fechar").focus();
+  }
+
+  function fecharLightbox() {
+    if (!lightbox) return;
+    lightbox.hidden = true;
+    document.body.classList.remove("sem-rolagem");
+  }
+
+  // Controles do lightbox: configurados uma única vez
+  if (lightbox) {
+    document.getElementById("lightbox-fechar").addEventListener("click", fecharLightbox);
+    document.getElementById("lightbox-ant").addEventListener("click", () => mostrarFoto(fotoAtual - 1));
+    document.getElementById("lightbox-prox").addEventListener("click", () => mostrarFoto(fotoAtual + 1));
+    // Clicar no fundo escuro também fecha
+    lightbox.addEventListener("click", (e) => { if (e.target === lightbox) fecharLightbox(); });
+    // Teclado: Esc fecha, setas trocam de foto
+    document.addEventListener("keydown", (e) => {
+      if (lightbox.hidden) return;
+      if (e.key === "Escape") fecharLightbox();
+      if (e.key === "ArrowLeft" && temVarias) mostrarFoto(fotoAtual - 1);
+      if (e.key === "ArrowRight" && temVarias) mostrarFoto(fotoAtual + 1);
+    });
+  }
+
+  function htmlGaleria() {
+    const setas = temVarias ? `
+        <button class="galeria__seta galeria__seta--ant" id="foto-ant" type="button" aria-label="Foto anterior">‹</button>
+        <button class="galeria__seta galeria__seta--prox" id="foto-prox" type="button" aria-label="Próxima foto">›</button>
+        <span class="galeria__contador" id="foto-contador">${fotoAtual + 1} / ${fotos.length}</span>` : "";
+
+    const miniaturas = temVarias ? `
+      <div class="miniaturas" role="group" aria-label="Fotos do produto">
+        ${fotos.map((url, i) => `
+          <button class="miniatura ${i === fotoAtual ? "ativa" : ""}" type="button" data-foto="${i}"
+            aria-label="Ver foto ${i + 1}" aria-current="${i === fotoAtual}">
+            <img src="${escaparHTML(url)}" alt="" loading="lazy">
+          </button>`).join("")}
+      </div>` : "";
+
+    return `
+      <div class="galeria">
+        <div class="galeria__principal" id="galeria-principal" title="Clique para ampliar">
+          <img id="foto-principal" src="${escaparHTML(fotos[fotoAtual])}" alt="${escaparHTML(p.nome)}">
+          ${setas}
+        </div>
+        ${miniaturas}
+      </div>`;
+  }
+
+  function ativarGaleria() {
+    const principal = document.getElementById("galeria-principal");
+
+    // Clicar na foto (fora das setas) amplia
+    principal.addEventListener("click", (e) => {
+      if (e.target.closest(".galeria__seta")) return;
+      abrirLightbox();
+    });
+
+    if (!temVarias) return;
+
+    document.getElementById("foto-ant").addEventListener("click", () => mostrarFoto(fotoAtual - 1));
+    document.getElementById("foto-prox").addEventListener("click", () => mostrarFoto(fotoAtual + 1));
+
+    document.querySelectorAll(".miniatura").forEach((m) =>
+      m.addEventListener("click", () => mostrarFoto(Number(m.dataset.foto)))
+    );
+
+    // Arrastar para o lado no celular troca de foto
+    let inicioX = null;
+    principal.addEventListener("touchstart", (e) => { inicioX = e.touches[0].clientX; }, { passive: true });
+    principal.addEventListener("touchend", (e) => {
+      if (inicioX === null) return;
+      const diferenca = e.changedTouches[0].clientX - inicioX;
+      inicioX = null;
+      if (Math.abs(diferenca) > 40) mostrarFoto(fotoAtual + (diferenca < 0 ? 1 : -1));
+    });
+  }
+
   function desenhar() {
     const fav = ehFavorito(p.id);
     area.innerHTML = `
       <div class="produto">
         <div class="produto__foto">
-          <img src="${escaparHTML(p.imagem || IMAGEM_PADRAO)}" alt="${escaparHTML(p.nome)}">
+          ${htmlGaleria()}
         </div>
         <div class="produto__info">
           <p class="produto__cat">${escaparHTML(p.categoria)}</p>
@@ -428,6 +629,8 @@ async function iniciarProduto() {
           <a class="voltar" href="index.html#vitrine">Voltar à vitrine</a>
         </div>
       </div>`;
+
+    ativarGaleria();
 
     document.getElementById("menos").onclick = () => { qtd = Math.max(1, qtd - 1); atualizarQtd(); };
     document.getElementById("mais").onclick = () => { qtd += 1; atualizarQtd(); };
