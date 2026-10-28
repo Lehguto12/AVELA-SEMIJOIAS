@@ -29,6 +29,14 @@
 
   <div id="rodape"></div>
 
+  <!-- Foto ampliada (abre ao clicar na foto do produto; o script.js controla) -->
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada">
+    <button class="lightbox__fechar" id="lightbox-fechar" type="button" aria-label="Fechar">×</button>
+    <button class="lightbox__seta lightbox__seta--ant" id="lightbox-ant" type="button" aria-label="Foto anterior">‹</button>
+    <img class="lightbox__img" id="lightbox-img" alt="">
+    <button class="lightbox__seta lightbox__seta--prox" id="lightbox-prox" type="button" aria-label="Próxima foto">›</button>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
