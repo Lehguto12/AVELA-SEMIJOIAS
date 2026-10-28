@@ -224,7 +224,7 @@ function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
   const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
 
   const linhas = [
-    "Olá! Gostaria de fazer um pedido na *AVELA Semijoias*:",
+    "Olá! Gostaria de fazer um pedido na *AVELA Semi Joias*:",
     "",
     ...itens.map((i) => `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(i.produto.preco * i.qtd)}`),
     "",
