@@ -257,3 +257,42 @@ button { font: inherit; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- 14. Botão de tema (sol / lua) ---------- */
+button.icone-btn { background: none; border: 0; cursor: pointer; }
+.icone-lua { display: none; }                          /* tema escuro: mostra o sol */
+[data-tema="claro"] .icone-sol { display: none; }      /* tema claro: mostra a lua */
+[data-tema="claro"] .icone-lua { display: block; }
+
+/* ---------- 15. Tema claro (ativado por data-tema="claro" no <html>) ----------
+   Só trocamos as variáveis e os poucos pontos com cor fixa. */
+[data-tema="claro"] {
+  --chumbo: #faf6f4;      /* fundo da página */
+  --chumbo-2: #ffffff;    /* cards e caixas */
+  --chumbo-3: #e6dcd9;    /* bordas */
+  --offwhite: #2b2023;    /* texto principal */
+  --cinza: #6b6063;       /* texto secundário */
+  --dourado: #8f6f12;     /* dourado mais escuro para ler bem no fundo claro */
+}
+
+[data-tema="claro"] body {
+  background:
+    radial-gradient(circle at 15% 0%, #f0e4e0 0%, transparent 45%),
+    var(--chumbo);
+  background-attachment: fixed;
+}
+
+[data-tema="claro"] .cabecalho { background: rgba(250, 246, 244, .9); }
+
+/* Títulos e logo em bordô no tema claro */
+[data-tema="claro"] h1,
+[data-tema="claro"] h2,
+[data-tema="claro"] h3,
+[data-tema="claro"] .logo__nome,
+[data-tema="claro"] .rodape strong { color: var(--bordo); }
+
+[data-tema="claro"] .card__fav { background: rgba(255, 255, 255, .88); }
+[data-tema="claro"] .hero__selo { color: #fff; }   /* texto sobre o círculo bordô */
+[data-tema="claro"] .resumo input,
+[data-tema="claro"] .resumo textarea { color: var(--offwhite); }
+[data-tema="claro"] .link-discreto:hover { color: var(--bordo); }
