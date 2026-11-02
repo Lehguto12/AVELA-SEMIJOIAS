@@ -11,7 +11,7 @@
 const CONFIG = {
   // Número do WhatsApp da loja: código do país + DDD + número, só dígitos.
   // Exemplo: 55 (Brasil) + 11 (DDD) + 999999999
-  WHATSAPP_NUMERO: "5511945375821",
+  WHATSAPP_NUMERO: "5511992650479",
 
   // Link CSV da planilha publicada (veja o README, passo a passo).
   // Deixe vazio ("") para usar os produtos de exemplo abaixo.
