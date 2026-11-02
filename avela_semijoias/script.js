@@ -183,7 +183,18 @@ function ajustarLinkImagem(url) {
    A coluna Imagem_URL aceita UMA ou VÁRIAS fotos separadas por "|" (ou uma por linha
    dentro da célula). Exemplo:  link1 | link2 | link3 */
 function csvParaProdutos(texto) {
-  const [cabecalho, ...linhas] = lerCSV(texto);
+  const todasLinhas = lerCSV(texto);
+
+  // Procura a linha de cabeçalho (a que tem as colunas "ID" e "Nome"),
+  // mesmo que existam linhas de anotação acima dela na planilha.
+  const indiceCabecalho = todasLinhas.findIndex((l) => {
+    const nomes = l.map(normalizar);
+    return nomes.includes("id") && nomes.includes("nome");
+  });
+  if (indiceCabecalho === -1) return [];
+
+  const cabecalho = todasLinhas[indiceCabecalho];
+  const linhas = todasLinhas.slice(indiceCabecalho + 1);
   const colunas = cabecalho.map(normalizar); // id, nome, categoria, preco, imagem_url, descricao, destaque
   const pos = (nome) => colunas.indexOf(nome);
 
