@@ -13,7 +13,7 @@ const CONFIG = {
   // Exemplo: 55 (Brasil) + 11 (DDD) + 999999999
   WHATSAPP_NUMERO: "5511992650479",
 
-  // Link CSV da planilha publicada (veja o README, passo a passo).
+  // Link CSV da planilha publicada (veja o README, passo a passo)
   // Deixe vazio ("") para usar os produtos de exemplo abaixo.
   PLANILHA_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXAx_5ct078YKwe6IqFcq_Xan-9whCXqm-HEc7DGWtHfUJijc3X3xzAFpKdanK3_k0UxmpGZALqtWw/pub?output=csv",
 
