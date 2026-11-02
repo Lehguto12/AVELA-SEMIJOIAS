@@ -215,19 +215,33 @@ function listaImagens(p) {
   return lista.length ? lista : [IMAGEM_PADRAO];
 }
 
-/* Busca os produtos (uma vez só por página) */
+/* Busca os produtos (uma vez só por página).
+   - Adiciona um parâmetro "t" na URL e usa cache "no-store" para sempre pegar
+     a versão mais recente da planilha (evita ver dados antigos).
+   - Mostra no Console (F12) o que aconteceu, para facilitar achar problemas.
+     Se der erro, cai nos produtos de exemplo. */
 let cacheProdutos = null;
 async function carregarProdutos() {
   if (cacheProdutos) return cacheProdutos;
 
   if (CONFIG.PLANILHA_CSV_URL) {
     try {
-      const resposta = await fetch(CONFIG.PLANILHA_CSV_URL);
+      const separador = CONFIG.PLANILHA_CSV_URL.includes("?") ? "&" : "?";
+      const url = CONFIG.PLANILHA_CSV_URL + separador + "t=" + Date.now();
+      const resposta = await fetch(url, { cache: "no-store" });
+      console.log("[AVELA] Status da planilha:", resposta.status);
       if (!resposta.ok) throw new Error("Resposta " + resposta.status);
-      const produtos = csvParaProdutos(await resposta.text());
+
+      const texto = await resposta.text();
+      console.log("[AVELA] Início do CSV:", texto.slice(0, 300));
+
+      const produtos = csvParaProdutos(texto);
+      console.log("[AVELA] Produtos lidos:", produtos.length, produtos);
+
       if (produtos.length) return (cacheProdutos = produtos);
+      console.warn("[AVELA] O CSV carregou, mas nenhum produto válido foi encontrado. Confira se a primeira linha é o cabeçalho: ID, Nome, Categoria, Preço, Imagem_URL, Descrição, Destaque.");
     } catch (erro) {
-      console.warn("Não foi possível ler a planilha. Usando produtos de exemplo.", erro);
+      console.warn("[AVELA] Não foi possível ler a planilha. Usando produtos de exemplo.", erro);
     }
   }
   return (cacheProdutos = PRODUTOS_EXEMPLO);
