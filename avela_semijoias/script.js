@@ -15,7 +15,7 @@ const CONFIG = {
 
   // Link CSV da planilha publicada (veja o README, passo a passo)
   // Deixe vazio ("") para usar os produtos de exemplo abaixo.
-  PLANILHA_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXAx_5ct078YKwe6IqFcq_Xan-9whCXqm-HEc7DGWtHfUJijc3X3xzAFpKdanK3_k0UxmpGZALqtWw/pub?output=csv",
+  PLANILHA_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXAx_5ct078YKwe6IqFcq_Xan-9whCXqm-HEc7DGWtHfUJijc3X3xzAFpKdanK3_k0UxmpGZALqtWw/pub?gid=564994496&single=true&output=csv",
 
   // Endereço público do site, usado nos links de produto enviados no WhatsApp.
   // Exemplo: "https://seuusuario.github.io/avela_semijoias"  (sem barra no final)
