@@ -301,3 +301,26 @@ button.icone-btn { background: none; border: 0; cursor: pointer; }
 [data-tema="claro"] .resumo input,
 [data-tema="claro"] .resumo textarea { color: var(--offwhite); }
 [data-tema="claro"] .link-discreto:hover { color: var(--bordo); }
+
+/* Preço promocional */
+.preco-antigo {
+  text-decoration: line-through;
+  opacity: 0.6;
+  font-size: 0.85em;
+  margin-right: 0.4rem;
+}
+.preco-promo {
+  color: #D4AF37;
+  font-weight: 600;
+}
+.selo-promo {
+  display: inline-block;
+  background: #581818;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
