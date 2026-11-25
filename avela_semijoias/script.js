@@ -77,6 +77,27 @@ function formatarPreco(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+/* Preço que realmente vale: o promocional só conta se for maior que 0
+   e menor que o preço normal (protege de erro de digitação na planilha) */
+function precoFinal(p) {
+  const promo = p.precoPromo || 0;
+  return promo > 0 && promo < p.preco ? promo : p.preco;
+}
+
+/* true quando o produto tem uma promoção válida */
+function emPromocao(p) {
+  return precoFinal(p) < p.preco;
+}
+
+/* HTML do preço: normal, ou riscado + promocional + selo de desconto */
+function htmlPreco(p) {
+  if (!emPromocao(p)) return formatarPreco(p.preco);
+  const desconto = Math.round((1 - precoFinal(p) / p.preco) * 100);
+  return `<span class="preco-antigo">${formatarPreco(p.preco)}</span>` +
+         `<span class="preco-promo">${formatarPreco(precoFinal(p))}</span>` +
+         `<span class="selo-promo">-${desconto}%</span>`;
+}
+
 /* Evita que texto vindo da planilha quebre o HTML */
 function escaparHTML(texto) {
   return String(texto ?? "").replace(/[&<>"']/g, (c) => (
@@ -181,7 +202,8 @@ function ajustarLinkImagem(url) {
 
 /* Converte as linhas do CSV em objetos de produto, usando o cabeçalho da planilha.
    A coluna Imagem_URL aceita UMA ou VÁRIAS fotos separadas por "|" (ou uma por linha
-   dentro da célula). Exemplo:  link1 | link2 | link3 */
+   dentro da célula). Exemplo:  link1 | link2 | link3
+   A coluna Preço_Promocional é opcional: vazia = sem promoção. */
 function csvParaProdutos(texto) {
   const todasLinhas = lerCSV(texto);
 
@@ -195,7 +217,7 @@ function csvParaProdutos(texto) {
 
   const cabecalho = todasLinhas[indiceCabecalho];
   const linhas = todasLinhas.slice(indiceCabecalho + 1);
-  const colunas = cabecalho.map(normalizar); // id, nome, categoria, tipo, preco, imagem_url, descricao, destaque
+  const colunas = cabecalho.map(normalizar); // id, nome, categoria, tipo, preco, preco_promocional, imagem_url, descricao, destaque
   const pos = (nome) => colunas.indexOf(nome);
 
   return linhas
@@ -211,6 +233,7 @@ function csvParaProdutos(texto) {
         categoria: (l[pos("categoria")] || "").trim(),
         tipo: (l[pos("tipo")] || "").trim(),
         preco: converterPreco(l[pos("preco")]),
+        precoPromo: converterPreco(l[pos("preco_promocional")]), // 0 = sem promoção
         imagem: imagens[0] || "", // foto principal (usada nos cards e no carrinho)
         imagens,                  // todas as fotos (usadas na página do produto)
         descricao: (l[pos("descricao")] || "").trim(),
@@ -315,14 +338,17 @@ function linkDoProduto(id) {
 
 /* itens: lista de { produto, qtd } */
 function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
-  const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
+  const total = itens.reduce((soma, i) => soma + precoFinal(i.produto) * i.qtd, 0);
 
   const linhas = [
     "Olá! Gostaria de fazer um pedido na *AVELA Semijoias*:",
     "",
     // Cada produto vai com o link da página dele, para o vendedor ver a peça exata
     ...itens.flatMap((i) => [
-      `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(i.produto.preco * i.qtd)}`,
+      `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(precoFinal(i.produto) * i.qtd)}` +
+        (emPromocao(i.produto)
+          ? ` (promoção: de ${formatarPreco(i.produto.preco)} por ${formatarPreco(precoFinal(i.produto))} cada)`
+          : ""),
       `Ver peça: ${linkDoProduto(i.produto.id)}`,
       "",
     ]),
@@ -411,7 +437,7 @@ function htmlCard(p) {
       <div class="card__corpo">
         <p class="card__cat">${escaparHTML(p.categoria)}</p>
         <h3 class="card__nome"><a href="${link}">${escaparHTML(p.nome)}</a></h3>
-        <p class="card__preco">${formatarPreco(p.preco)}</p>
+        <p class="card__preco">${htmlPreco(p)}</p>
         <div class="card__botoes">
           <a class="btn btn--contorno" href="${link}">Ver detalhes</a>
           <button class="btn btn--bordo" data-acao="adicionar" data-id="${id}">Adicionar</button>
@@ -659,7 +685,7 @@ async function iniciarProduto() {
         <div class="produto__info">
           <p class="produto__cat">${escaparHTML(p.categoria)}</p>
           <h1>${escaparHTML(p.nome)}</h1>
-          <p class="produto__preco">${formatarPreco(p.preco)}</p>
+          <p class="produto__preco">${htmlPreco(p)}</p>
           <p class="produto__desc">${escaparHTML(p.descricao)}</p>
 
           <div class="qtd" aria-label="Quantidade">
@@ -735,7 +761,7 @@ async function iniciarCarrinho() {
         <img src="${escaparHTML(p.imagem || IMAGEM_PADRAO)}" alt="${escaparHTML(p.nome)}">
         <div>
           <h3 class="item__nome"><a href="produto.html?id=${encodeURIComponent(p.id)}">${escaparHTML(p.nome)}</a></h3>
-          <p class="item__preco">${formatarPreco(p.preco)}</p>
+          <p class="item__preco">${htmlPreco(p)}</p>
           <div class="item__linha">
             <div class="qtd">
               <button data-acao="menos" data-id="${escaparHTML(p.id)}" aria-label="Diminuir quantidade">−</button>
@@ -747,7 +773,7 @@ async function iniciarCarrinho() {
         </div>
       </div>`).join("");
 
-    const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
+    const total = itens.reduce((soma, i) => soma + precoFinal(i.produto) * i.qtd, 0);
     document.getElementById("total").textContent = formatarPreco(total);
     resumo.hidden = false;
     atualizarLinkWhatsApp(itens);
