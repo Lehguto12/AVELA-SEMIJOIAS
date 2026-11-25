@@ -28,14 +28,14 @@ const CONFIG = {
 /* Produtos de exemplo: usados quando PLANILHA_CSV_URL está vazio
    ou quando a planilha não carrega. Têm o mesmo formato da planilha. */
 const PRODUTOS_EXEMPLO = [
-  { id: "1", nome: "Brinco Argola Lisa", categoria: "Aço Inox", preco: 49.9, imagem: "", descricao: "Argola lisa em aço inox, não escurece e não perde o brilho. Ideal para o dia a dia.", destaque: true },
-  { id: "2", nome: "Colar Ponto de Luz", categoria: "Pratas", preco: 129.9, imagem: "", descricao: "Corrente delicada com pingente de ponto de luz. Prata com acabamento polido.", destaque: true },
-  { id: "3", nome: "Pulseira Riviera", categoria: "Aço Inox", preco: 79.9, imagem: "", descricao: "Pulseira com zircônias, fecho seguro e ajuste de tamanho.", destaque: false },
-  { id: "4", nome: "Anel Solitário", categoria: "Pratas", preco: 159.9, imagem: "", descricao: "Anel solitário clássico, perfeito para presentear.", destaque: true },
-  { id: "5", nome: "Colar com Nome", categoria: "Personalizados", preco: 99.9, imagem: "", descricao: "Colar com o nome que você escolher. Informe o nome nas observações do pedido.", destaque: true },
-  { id: "6", nome: "Pulseira com Inicial", categoria: "Personalizados", preco: 89.9, imagem: "", descricao: "Pulseira com a letra inicial de quem você ama. Informe a letra nas observações.", destaque: false },
-  { id: "7", nome: "Corrente Cartier", categoria: "Aço Inox", preco: 69.9, imagem: "", descricao: "Corrente de elos em aço inox. Combina sozinha ou com pingentes.", destaque: false },
-  { id: "8", nome: "Brinco Ear Cuff", categoria: "Pratas", preco: 59.9, imagem: "", descricao: "Brinco ear cuff que dispensa furo. Leve e confortável.", destaque: false },
+  { id: "1", nome: "Brinco Argola Lisa", categoria: "Aço Inox", tipo: "Brinco", preco: 49.9, imagem: "", descricao: "Argola lisa em aço inox, não escurece e não perde o brilho. Ideal para o dia a dia.", destaque: true },
+  { id: "2", nome: "Colar Ponto de Luz", categoria: "Pratas", tipo: "Colar", preco: 129.9, imagem: "", descricao: "Corrente delicada com pingente de ponto de luz. Prata com acabamento polido.", destaque: true },
+  { id: "3", nome: "Pulseira Riviera", categoria: "Aço Inox", tipo: "Pulseira", preco: 79.9, imagem: "", descricao: "Pulseira com zircônias, fecho seguro e ajuste de tamanho.", destaque: false },
+  { id: "4", nome: "Anel Solitário", categoria: "Pratas", tipo: "Anel", preco: 159.9, imagem: "", descricao: "Anel solitário clássico, perfeito para presentear.", destaque: true },
+  { id: "5", nome: "Colar com Nome", categoria: "Personalizados", tipo: "Colar", preco: 99.9, imagem: "", descricao: "Colar com o nome que você escolher. Informe o nome nas observações do pedido.", destaque: true },
+  { id: "6", nome: "Pulseira com Inicial", categoria: "Personalizados", tipo: "Pulseira", preco: 89.9, imagem: "", descricao: "Pulseira com a letra inicial de quem você ama. Informe a letra nas observações.", destaque: false },
+  { id: "7", nome: "Corrente Cartier", categoria: "Aço Inox", tipo: "Corrente", preco: 69.9, imagem: "", descricao: "Corrente de elos em aço inox. Combina sozinha ou com pingentes.", destaque: false },
+  { id: "8", nome: "Brinco Ear Cuff", categoria: "Pratas", tipo: "Brinco", preco: 59.9, imagem: "", descricao: "Brinco ear cuff que dispensa furo. Leve e confortável.", destaque: false },
 ];
 
 /* ---------------------------------------------------------
@@ -75,6 +75,27 @@ document.addEventListener("error", (e) => {
 /* Formata número como moeda brasileira: 49.9 vira "R$ 49,90" */
 function formatarPreco(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/* Preço que realmente vale: o promocional só conta se for maior que 0
+   e menor que o preço normal (protege de erro de digitação na planilha) */
+function precoFinal(p) {
+  const promo = p.precoPromo || 0;
+  return promo > 0 && promo < p.preco ? promo : p.preco;
+}
+
+/* true quando o produto tem uma promoção válida */
+function emPromocao(p) {
+  return precoFinal(p) < p.preco;
+}
+
+/* HTML do preço: normal, ou riscado + promocional + selo de desconto */
+function htmlPreco(p) {
+  if (!emPromocao(p)) return formatarPreco(p.preco);
+  const desconto = Math.round((1 - precoFinal(p) / p.preco) * 100);
+  return `<span class="preco-antigo">${formatarPreco(p.preco)}</span>` +
+         `<span class="preco-promo">${formatarPreco(precoFinal(p))}</span>` +
+         `<span class="selo-promo">-${desconto}%</span>`;
 }
 
 /* Evita que texto vindo da planilha quebre o HTML */
@@ -181,7 +202,8 @@ function ajustarLinkImagem(url) {
 
 /* Converte as linhas do CSV em objetos de produto, usando o cabeçalho da planilha.
    A coluna Imagem_URL aceita UMA ou VÁRIAS fotos separadas por "|" (ou uma por linha
-   dentro da célula). Exemplo:  link1 | link2 | link3 */
+   dentro da célula). Exemplo:  link1 | link2 | link3
+   A coluna Preço_Promocional é opcional: vazia = sem promoção. */
 function csvParaProdutos(texto) {
   const todasLinhas = lerCSV(texto);
 
@@ -195,7 +217,7 @@ function csvParaProdutos(texto) {
 
   const cabecalho = todasLinhas[indiceCabecalho];
   const linhas = todasLinhas.slice(indiceCabecalho + 1);
-  const colunas = cabecalho.map(normalizar); // id, nome, categoria, preco, imagem_url, descricao, destaque
+  const colunas = cabecalho.map(normalizar); // id, nome, categoria, tipo, preco, preco_promocional, imagem_url, descricao, destaque
   const pos = (nome) => colunas.indexOf(nome);
 
   return linhas
@@ -209,7 +231,9 @@ function csvParaProdutos(texto) {
         id: (l[pos("id")] || "").trim(),
         nome: (l[pos("nome")] || "").trim(),
         categoria: (l[pos("categoria")] || "").trim(),
+        tipo: (l[pos("tipo")] || "").trim(),
         preco: converterPreco(l[pos("preco")]),
+        precoPromo: converterPreco(l[pos("preco_promocional")]), // 0 = sem promoção
         imagem: imagens[0] || "", // foto principal (usada nos cards e no carrinho)
         imagens,                  // todas as fotos (usadas na página do produto)
         descricao: (l[pos("descricao")] || "").trim(),
@@ -314,14 +338,17 @@ function linkDoProduto(id) {
 
 /* itens: lista de { produto, qtd } */
 function montarLinkWhatsApp(itens, nomeCliente = "", observacoes = "") {
-  const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
+  const total = itens.reduce((soma, i) => soma + precoFinal(i.produto) * i.qtd, 0);
 
   const linhas = [
     "Olá! Gostaria de fazer um pedido na *AVELA Semijoias*:",
     "",
     // Cada produto vai com o link da página dele, para o vendedor ver a peça exata
     ...itens.flatMap((i) => [
-      `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(i.produto.preco * i.qtd)}`,
+      `• ${i.qtd}x ${i.produto.nome} - ${formatarPreco(precoFinal(i.produto) * i.qtd)}` +
+        (emPromocao(i.produto)
+          ? ` (promoção: de ${formatarPreco(i.produto.preco)} por ${formatarPreco(precoFinal(i.produto))} cada)`
+          : ""),
       `Ver peça: ${linkDoProduto(i.produto.id)}`,
       "",
     ]),
@@ -410,7 +437,7 @@ function htmlCard(p) {
       <div class="card__corpo">
         <p class="card__cat">${escaparHTML(p.categoria)}</p>
         <h3 class="card__nome"><a href="${link}">${escaparHTML(p.nome)}</a></h3>
-        <p class="card__preco">${formatarPreco(p.preco)}</p>
+        <p class="card__preco">${htmlPreco(p)}</p>
         <div class="card__botoes">
           <a class="btn btn--contorno" href="${link}">Ver detalhes</a>
           <button class="btn btn--bordo" data-acao="adicionar" data-id="${id}">Adicionar</button>
@@ -444,11 +471,30 @@ async function iniciarHome() {
   const produtos = await carregarProdutos();
   const grade = document.getElementById("grade");
   const vazio = document.getElementById("vazio");
-  const botoes = document.querySelectorAll(".filtro");
+  const botoes = document.querySelectorAll("#filtros-categoria .filtro");
+  const areaTipos = document.getElementById("filtros-tipo");
 
   // Se veio do coração do cabeçalho (?filtro=favoritos), já abre nos favoritos
   const params = new URLSearchParams(location.search);
   let filtroAtual = params.get("filtro") === "favoritos" ? "favoritos" : "todos";
+  let tipoAtual = "todos"; // segundo filtro: Colar, Anel, Pulseira...
+
+  // Botões de tipo nascem sozinhos a partir da coluna Tipo da planilha.
+  // Tipo novo na planilha = botão novo na loja, sem mexer no código.
+  const tipos = [];
+  produtos.forEach((p) => {
+    if (p.tipo && !tipos.some((t) => normalizar(t) === normalizar(p.tipo))) tipos.push(p.tipo);
+  });
+  if (tipos.length) {
+    areaTipos.innerHTML =
+      `<button class="filtro ativo" data-tipo="todos">Todos os tipos</button>` +
+      tipos.map((t) => `<button class="filtro" data-tipo="${escaparHTML(t)}">${escaparHTML(t)}</button>`).join("");
+    areaTipos.hidden = false;
+    areaTipos.querySelectorAll(".filtro").forEach((b) => b.addEventListener("click", () => {
+      tipoAtual = b.dataset.tipo;
+      desenharVitrine();
+    }));
+  }
 
   // Destaques
   const destaques = produtos.filter((p) => p.destaque).slice(0, 4);
@@ -463,14 +509,18 @@ async function iniciarHome() {
     if (filtroAtual === "favoritos") lista = produtos.filter((p) => ehFavorito(p.id));
     else if (filtroAtual !== "todos") lista = produtos.filter((p) => normalizar(p.categoria) === normalizar(filtroAtual));
 
+    // Os dois filtros trabalham juntos (ex.: Aço Inox + Colar)
+    if (tipoAtual !== "todos") lista = lista.filter((p) => normalizar(p.tipo) === normalizar(tipoAtual));
+
     grade.innerHTML = lista.map(htmlCard).join("");
     vazio.hidden = lista.length > 0;
     if (!lista.length) {
       vazio.textContent = filtroAtual === "favoritos"
         ? "Você ainda não tem favoritos. Toque no coração de uma peça para guardá-la aqui."
-        : "Nenhuma peça nesta categoria por enquanto.";
+        : "Nenhuma peça com esse filtro por enquanto.";
     }
     botoes.forEach((b) => b.classList.toggle("ativo", b.dataset.categoria === filtroAtual));
+    areaTipos.querySelectorAll(".filtro").forEach((b) => b.classList.toggle("ativo", b.dataset.tipo === tipoAtual));
   }
 
   botoes.forEach((b) => b.addEventListener("click", () => {
@@ -635,7 +685,7 @@ async function iniciarProduto() {
         <div class="produto__info">
           <p class="produto__cat">${escaparHTML(p.categoria)}</p>
           <h1>${escaparHTML(p.nome)}</h1>
-          <p class="produto__preco">${formatarPreco(p.preco)}</p>
+          <p class="produto__preco">${htmlPreco(p)}</p>
           <p class="produto__desc">${escaparHTML(p.descricao)}</p>
 
           <div class="qtd" aria-label="Quantidade">
@@ -711,7 +761,7 @@ async function iniciarCarrinho() {
         <img src="${escaparHTML(p.imagem || IMAGEM_PADRAO)}" alt="${escaparHTML(p.nome)}">
         <div>
           <h3 class="item__nome"><a href="produto.html?id=${encodeURIComponent(p.id)}">${escaparHTML(p.nome)}</a></h3>
-          <p class="item__preco">${formatarPreco(p.preco)}</p>
+          <p class="item__preco">${htmlPreco(p)}</p>
           <div class="item__linha">
             <div class="qtd">
               <button data-acao="menos" data-id="${escaparHTML(p.id)}" aria-label="Diminuir quantidade">−</button>
@@ -723,7 +773,7 @@ async function iniciarCarrinho() {
         </div>
       </div>`).join("");
 
-    const total = itens.reduce((soma, i) => soma + i.produto.preco * i.qtd, 0);
+    const total = itens.reduce((soma, i) => soma + precoFinal(i.produto) * i.qtd, 0);
     document.getElementById("total").textContent = formatarPreco(total);
     resumo.hidden = false;
     atualizarLinkWhatsApp(itens);

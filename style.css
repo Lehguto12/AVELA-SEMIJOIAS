@@ -135,6 +135,11 @@ button { font: inherit; cursor: pointer; }
 .filtro:hover { border-color: var(--dourado); }
 .filtro.ativo { background: var(--bordo); border-color: var(--bordo-claro); color: var(--branco); }
 
+/* Dois grupos de filtro: categoria (material) em cima, tipo da peça embaixo */
+#filtros-categoria { margin-bottom: 1rem; }
+.filtros--tipo .filtro { font-size: .85rem; padding: .4rem 1rem; }
+.filtros--tipo .filtro.ativo { background: transparent; border-color: var(--dourado); color: var(--dourado); }
+
 .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
 .vazio, .carregando { color: var(--cinza); padding: 2rem 0; }
@@ -296,3 +301,26 @@ button.icone-btn { background: none; border: 0; cursor: pointer; }
 [data-tema="claro"] .resumo input,
 [data-tema="claro"] .resumo textarea { color: var(--offwhite); }
 [data-tema="claro"] .link-discreto:hover { color: var(--bordo); }
+
+/* Preço promocional */
+.preco-antigo {
+  text-decoration: line-through;
+  opacity: 0.6;
+  font-size: 0.85em;
+  margin-right: 0.4rem;
+}
+.preco-promo {
+  color: #D4AF37;
+  font-weight: 600;
+}
+.selo-promo {
+  display: inline-block;
+  background: #581818;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}

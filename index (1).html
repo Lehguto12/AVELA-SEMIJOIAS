@@ -53,7 +53,7 @@
     <section class="secao container" id="vitrine">
       <h2 class="secao__titulo">Vitrine</h2>
 
-      <div class="filtros" role="group" aria-label="Filtrar por categoria">
+      <div class="filtros" id="filtros-categoria" role="group" aria-label="Filtrar por categoria">
         <button class="filtro ativo" data-categoria="todos">Todos</button>
         <button class="filtro ativo" data-categoria="Douradas">Douradas</button>
         <button class="filtro" data-categoria="Aço Inox">Aço Inox</button>
@@ -61,6 +61,9 @@
         <button class="filtro" data-categoria="Personalizados">Personalizados</button>
         <button class="filtro" data-categoria="favoritos">Favoritos</button>
       </div>
+
+      <!-- Filtro por tipo de peça: os botões são criados pelo script.js a partir da coluna Tipo da planilha -->
+      <div class="filtros filtros--tipo" id="filtros-tipo" role="group" aria-label="Filtrar por tipo de peça" hidden></div>
 
       <div class="grade" id="grade"></div>
       <p class="vazio" id="vazio" hidden></p>
