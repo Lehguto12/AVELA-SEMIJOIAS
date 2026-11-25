@@ -138,7 +138,7 @@ button { font: inherit; cursor: pointer; }
 /* Dois grupos de filtro: categoria (material) em cima, tipo da peça embaixo */
 #filtros-categoria { margin-bottom: 1rem; }
 .filtros--tipo .filtro { font-size: .85rem; padding: .4rem 1rem; }
-.filtros--tipo .filtro.ativo { background: transparent; border-color: var(--dourado); color: var(--dourado); }
+
 
 .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
