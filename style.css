@@ -324,3 +324,134 @@ button.icone-btn { background: none; border: 0; cursor: pointer; }
   margin-left: 0.4rem;
   vertical-align: middle;
 }
+
+/* ===== Cards: todas as fotos do mesmo tamanho ===== */
+.card { position: relative; display: flex; flex-direction: column; }
+.card .card__img { display: block; aspect-ratio: 1 / 1; overflow: hidden; }
+.card .card__img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card .card__corpo { display: flex; flex-direction: column; flex: 1; }
+.card .card__botoes { margin-top: auto; }
+
+/* ===== Galeria do produto (foto grande + miniaturas embaixo) ===== */
+.galeria { width: 100%; }
+
+.galeria .galeria__principal {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #1a1a1d;
+  cursor: zoom-in;
+}
+.galeria .galeria__principal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galeria .galeria__seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 4;
+}
+.galeria .galeria__seta--ant { left: 10px; }
+.galeria .galeria__seta--prox { right: 10px; }
+
+.galeria .galeria__contador {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 2px 10px;
+  border-radius: 20px;
+  z-index: 4;
+}
+
+/* Miniaturas em linha, a ativa fica com borda dourada */
+.galeria .miniaturas {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.galeria .miniatura {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  background: none;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.galeria .miniatura img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.galeria .miniatura:hover { opacity: 1; }
+.galeria .miniatura.ativa { border-color: #D4AF37; opacity: 1; }
+
+/* Lupa que acompanha o mouse */
+.galeria .lupa {
+  display: none;
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid #D4AF37;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  background-color: #111;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 3;
+}
+.galeria .lupa.visivel { display: block; }
+
+/* ===== Foto ampliada em tela cheia (clique na foto) ===== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.lightbox[hidden] { display: none; }
+.lightbox__img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lightbox__fechar,
+.lightbox__seta {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.lightbox__seta[hidden] { display: none; }
+.lightbox__fechar { top: 16px; right: 16px; }
+.lightbox__seta--ant { left: 16px; top: 50%; transform: translateY(-50%); }
+.lightbox__seta--prox { right: 16px; top: 50%; transform: translateY(-50%); }
+body.sem-rolagem { overflow: hidden; }

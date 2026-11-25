@@ -646,6 +646,56 @@ async function iniciarProduto() {
       </div>`;
   }
 
+    /* Lupa: círculo que segue o mouse e mostra a foto ampliada (só em computador) */
+  function ativarLupa(principal) {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+    const img = document.getElementById("foto-principal");
+    const TAM = 150;   // tamanho da lupa em pixels
+    const ZOOM = 2;    // aumento (2 = o dobro)
+
+    const lupa = document.createElement("div");
+    lupa.className = "lupa";
+    lupa.style.width = lupa.style.height = `${TAM}px`;
+    principal.appendChild(lupa);
+
+    let srcAtual = "";
+
+    principal.addEventListener("mouseleave", () => lupa.classList.remove("visivel"));
+    principal.addEventListener("mousemove", (e) => {
+      // Some em cima das setas ou se a foto ainda não carregou
+      if (e.target.closest(".galeria__seta") || !img.naturalWidth) {
+        lupa.classList.remove("visivel");
+        return;
+      }
+
+      const caixa = principal.getBoundingClientRect();
+      const x = e.clientX - caixa.left;
+      const y = e.clientY - caixa.top;
+
+      // A foto usa object-fit: cover, então calculamos o tamanho real em que ela aparece
+      const escala = Math.max(caixa.width / img.naturalWidth, caixa.height / img.naturalHeight);
+      const largura = img.naturalWidth * escala;
+      const altura = img.naturalHeight * escala;
+      const sobraX = (caixa.width - largura) / 2;
+      const sobraY = (caixa.height - altura) / 2;
+
+      // Se a foto mudou (setas/miniaturas), atualiza a imagem da lupa
+      const src = img.currentSrc || img.src;
+      if (src !== srcAtual) {
+        srcAtual = src;
+        lupa.style.backgroundImage = `url(${JSON.stringify(src)})`;
+      }
+
+      lupa.style.left = `${x - TAM / 2}px`;
+      lupa.style.top = `${y - TAM / 2}px`;
+      lupa.style.backgroundSize = `${largura * ZOOM}px ${altura * ZOOM}px`;
+      lupa.style.backgroundPosition =
+        `${TAM / 2 - (x - sobraX) * ZOOM}px ${TAM / 2 - (y - sobraY) * ZOOM}px`;
+      lupa.classList.add("visivel");
+    });
+  }
+
   function ativarGaleria() {
     const principal = document.getElementById("galeria-principal");
 
